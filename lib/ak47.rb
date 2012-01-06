@@ -20,7 +20,6 @@ module Ak47
       interval, maximum, error_time = 0.01, nil, 5
       optparse = OptionParser.new do |opts|
         opts.banner = "Usage: ak47 [cmd] / ak47 [options] --- [cmd]"
-
         opts.on( '-i', '--interval [FLOAT]', 'Interval before restarting' ) do |i|
           interval = Float(i) rescue raise("Interval must be a valid floating point number (e.g. -i0.5)")
           raise("Interval must be a positive number") unless interval >= 0
@@ -44,7 +43,11 @@ module Ak47
       watch_dirs.map! { |wd| File.expand_path(wd, Dir.pwd) }
 
       command = ShellTools.escape(commands).strip
-      raise "No command supplied" if command.empty?
+      if command.empty?
+        puts optparse
+        puts
+        raise "No command supplied"
+      end
       Runner.new(watch_dirs, command, maximum, interval, error_time).start
     rescue
       puts $!.message.red
