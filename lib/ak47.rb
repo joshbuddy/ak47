@@ -2,6 +2,7 @@ require 'guard'
 require 'shell_tools'
 require "ak47/version"
 require "ak47/runner"
+require "smart_colored/extend"
 
 module Ak47
   Reload = Class.new(RuntimeError)
@@ -21,13 +22,16 @@ module Ak47
         opts.banner = "Usage: ak47 [cmd] / ak47 [options] --- [cmd]"
 
         opts.on( '-i', '--interval [FLOAT]', 'Interval before restarting' ) do |i|
-          interval = Float(i)
+          interval = Float(i) rescue raise("Interval must be a valid floating point number (e.g. -i0.5)")
+          raise("Interval must be a positive number") unless interval >= 0
         end
         opts.on( '-m', '--maximum [FLOAT]', 'Maximum time to wait before restarting' ) do |m|
-          maximum = Float(m)
+          maximum = Float(m) rescue raise("Maximum must be a valid floating point number (e.g. -m60)")
+          raise("Maximum must be a positive number") unless maximum >= 0
         end
         opts.on( '-e', '--error-time [FLOAT]', 'Maximum time to wait before restarting if there was an abnormal status code' ) do |e|
-          error_time = Float(e)
+          error_time = Float(e) rescue raise("Error time must be a valid floating point number (e.g. -e10)")
+          raise("Maximum must be a positive number") unless error_time >= 0
         end
         opts.on( '-h', '--help', 'Display this screen' ) do
           puts opts
@@ -42,6 +46,8 @@ module Ak47
       command = ShellTools.escape(commands).strip
       raise "No command supplied" if command.empty?
       Runner.new(watch_dirs, command, maximum, interval, error_time).start
+    rescue
+      puts $!.message.red
     end
   end
 end

@@ -20,4 +20,5 @@ Gem::Specification.new do |s|
 
   s.add_dependency "guard", "~> 0.10.0"
   s.add_dependency "shell_tools", "~> 0.1.0"
+  s.add_dependency "smart_colored"
 end

@@ -15,10 +15,10 @@ module Ak47
 
       at_exit { Process.kill("INT", @pid) rescue nil if @pid }
 
-      puts "[Starting ak47 #{VERSION} in #{watch_dirs.join(', ')}]"
+      puts "[Starting ak47 #{VERSION} in #{watch_dirs.join(', ')}]".green
       loop do
         begin
-          puts "[Running... #{Time.new.to_s}]"
+          puts "[Running... #{Time.new.to_s}]".yellow
           puts "# #{command}"
           if maximum 
             @thread = Thread.new { sleep maximum; Thread.main.raise Reload, "Cancelled due to maximum time" }
@@ -29,17 +29,17 @@ module Ak47
           _, status = Process.waitpid2(@pid)
           @thread.kill if @thread
           if status.success?
-            puts "[Terminated, waiting for file system change]"
+            puts "[Terminated, waiting for file system change]".green
             maximum ? sleep(interval) : sleep
           else
-            puts "[Terminated abnormally (#{status.inspect}), retrying in 5s]"
+            puts "[Terminated abnormally (#{status.inspect}), retrying in 5s]".red
             sleep error_time
           end
         rescue Reload => e
           sleep interval
-          puts "[Reloading (#{e.message}) #{Time.new.to_s}]"
+          puts "[Reloading (#{e.message}) #{Time.new.to_s}]".yellow
         rescue Interrupt
-          puts "[Interrupted, exiting]"
+          puts "[Interrupted, exiting]".yellow
           exit
         end
       end
