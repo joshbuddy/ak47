@@ -1,40 +1,47 @@
 require 'guard'
 require 'shell_tools'
 require "ak47/version"
+require "ak47/runner"
 
 module Ak47
   Reload = Class.new(RuntimeError)
 
   class << self
     def run(*argv)
-      command = ShellTools.escape(argv)
-      watch_dir = Dir.pwd
-      listener = Guard::Listener.select_and_init(:watchdir => watch_dir, :watch_all_modifications => true)
-      listener.on_change {
-        Thread.main.raise Reload
-      }
-      Thread.new { listener.start }
+      argv_opts, commands = if argv == ['--help'] or argv == ['-help']
+        [argv, []]
+      elsif divider_index = argv.index('---')
+        [argv[0...divider_index], argv[divider_index.succ...argv.size]]
+      else
+        [[], argv]
+      end
 
-      at_exit { Process.kill("INT", @pid) rescue nil if @pid }
+      interval, maximum, error_time = 0.01, nil, 5
+      optparse = OptionParser.new do |opts|
+        opts.banner = "Usage: ak47 [cmd] / ak47 [options] --- [cmd]"
 
-      puts "[Starting ak47 #{VERSION} in #{watch_dir.inspect}]"
-      loop do
-        begin
-          puts "[Running... #{Time.new.to_s}]"
-          puts "# #{command}"
-          @pid = fork { exec(command) }
-          _, status = Process.waitpid2(@pid)
-          if status.success?
-            puts "[Terminated, waiting for file system change]"
-            sleep
-          else
-            puts "[Terminated abnormally (#{status.inspect}), retrying in 5s]"
-            sleep 5
-          end
-        rescue Reload
-          puts "[Reloading... #{Time.new.to_s}]"
+        opts.on( '-i', '--interval [FLOAT]', 'Interval before restarting' ) do |i|
+          interval = Float(i)
+        end
+        opts.on( '-m', '--maximum [FLOAT]', 'Maximum time to wait before restarting' ) do |m|
+          maximum = Float(m)
+        end
+        opts.on( '-e', '--error-time [FLOAT]', 'Maximum time to wait before restarting if there was an abnormal status code' ) do |e|
+          error_time = Float(e)
+        end
+        opts.on( '-h', '--help', 'Display this screen' ) do
+          puts opts
+          exit
         end
       end
+      optparse.parse!(argv_opts)
+      watch_dirs = argv_opts
+      watch_dirs << Dir.pwd if watch_dirs.empty?
+      watch_dirs.map! { |wd| File.expand_path(wd, Dir.pwd) }
+
+      command = ShellTools.escape(commands).strip
+      raise "No command supplied" if command.empty?
+      Runner.new(watch_dirs, command, maximum, interval, error_time).start
     end
   end
 end
