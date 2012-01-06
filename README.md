@@ -22,8 +22,8 @@ There are a few command line options as well:
   * -e / --error-time Amount of time to wait between restarts if there was an error. Defaults to 5 seconds.
   
 Any remaining arguments passed to the path will be interpretted as directories to watch. To stop parsing command line arguments
-and enter your command, use `---` to seperate options from your command. For example:
+and enter your command, use `--` to seperate options from your command. For example:
 
-    ak47 -i2 test --- rake test
+    ak47 -i2 test -- rake test
 
 This will watch your `test` directory and wait two seconds between restarts.

@@ -11,7 +11,7 @@ module Ak47
     def run(*argv)
       argv_opts, commands = if argv == ['--help'] or argv == ['-help']
         [argv, []]
-      elsif divider_index = argv.index('---')
+      elsif divider_index = argv.index('--')
         [argv[0...divider_index], argv[divider_index.succ...argv.size]]
       else
         [[], argv]
@@ -19,7 +19,7 @@ module Ak47
 
       interval, maximum, error_time = 0.01, nil, 5
       optparse = OptionParser.new do |opts|
-        opts.banner = "Usage: ak47 [cmd] / ak47 [options] --- [cmd]"
+        opts.banner = "Usage: ak47 [cmd] / ak47 [options] -- [cmd]"
         opts.on( '-i', '--interval [FLOAT]', 'Interval before restarting' ) do |i|
           interval = Float(i) rescue raise("Interval must be a valid floating point number (e.g. -i0.5)")
           raise("Interval must be a positive number") unless interval >= 0
