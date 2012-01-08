@@ -27,3 +27,12 @@ and enter your command, use `--` to seperate options from your command. For exam
     ak47 -i2 test -- rake test
 
 This will watch your `test` directory and wait two seconds between restarts.
+
+### Programmatic Usage
+
+You can use Ak47 within a Ruby program in the following way.
+
+    require 'ak47'
+    Ak47 {
+      puts "Reloading!"
+    }
