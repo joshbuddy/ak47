@@ -17,7 +17,7 @@ module Ak47
         [[], argv]
       end
 
-      interval, maximum, error_time = 0.01, nil, 5
+      interval, maximum, error_time = nil, nil, 5
       optparse = OptionParser.new do |opts|
         opts.banner = "Usage: ak47 [cmd] / ak47 [options] -- [cmd]"
         opts.on( '-i', '--interval [FLOAT]', 'Interval before restarting' ) do |i|
@@ -48,9 +48,14 @@ module Ak47
         puts
         raise "No command supplied"
       end
-      Runner.new(watch_dirs, command, maximum, interval, error_time).start
+      Runner.new(:watch_dirs => watch_dirs, :maximum => maximum, :interval => interval, :error_time => error_time, :command => command) { exec(command) }.start
     rescue
       puts $!.message.red
+      exit 1
     end
   end
+end
+
+def Ak47(opts = nil, &blk)
+  Ak47::Runner.new(opts, &blk).start
 end

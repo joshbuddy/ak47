@@ -1,9 +1,14 @@
 module Ak47
   class Runner
-    attr_reader :watch_dirs, :command, :maximum, :interval, :error_time
+    attr_reader :watch_dirs, :maximum, :interval, :error_time, :command
 
-    def initialize(watch_dirs, command, maximum, interval, error_time)
-      @watch_dirs, @command, @maximum, @interval, @error_time = watch_dirs, command, maximum, interval, error_time
+    def initialize(opts = nil, &blk)
+      @watch_dirs = Array(opts && opts[:watch_dirs] || Dir.pwd)
+      @maximum    = opts && opts[:maximum]
+      @interval   = opts && opts[:interval] || 0.01
+      @error_time = opts && opts[:error_time] || 5
+      @command    = opts && opts[:command]
+      @blk        = blk
     end
 
     def start
@@ -19,13 +24,11 @@ module Ak47
       loop do
         begin
           puts "[Running... #{Time.new.to_s}]".yellow
-          puts "# #{command}"
+          puts "# #{command}" if command
           if maximum 
             @thread = Thread.new { sleep maximum; Thread.main.raise Reload, "Cancelled due to maximum time" }
           end
-          @pid = fork {
-            exec(command)
-          }
+          @pid = fork(&@blk)
           _, status = Process.waitpid2(@pid)
           @thread.kill if @thread
           if status.success?
