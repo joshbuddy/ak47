@@ -1,8 +1,10 @@
 require 'guard'
 require 'shell_tools'
+require "smart_colored/extend"
+require 'optparse'
+
 require "ak47/version"
 require "ak47/runner"
-require "smart_colored/extend"
 
 module Ak47
   Reload = Class.new(RuntimeError)
