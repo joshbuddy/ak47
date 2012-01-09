@@ -19,7 +19,7 @@ module Ak47
         [[], argv]
       end
 
-      interval, maximum, error_time = nil, nil, 5
+      interval, maximum, error_time, interrupt = nil, nil, 5, true
       optparse = OptionParser.new do |opts|
         opts.banner = "Usage: ak47 [cmd] / ak47 [options] -- [cmd]"
         opts.on( '-i', '--interval [FLOAT]', 'Interval before restarting' ) do |i|
@@ -33,6 +33,9 @@ module Ak47
         opts.on( '-e', '--error-time [FLOAT]', 'Maximum time to wait before restarting if there was an abnormal status code' ) do |e|
           error_time = Float(e) rescue raise("Error time must be a valid floating point number (e.g. -e10)")
           raise("Maximum must be a positive number") unless error_time >= 0
+        end
+        opts.on( '-d', '--dont-interrupt', 'Don\'t interrupt a running process, wait for it to finish before reloading' ) do
+          interrupt = false
         end
         opts.on( '-h', '--help', 'Display this screen' ) do
           puts opts
@@ -50,7 +53,9 @@ module Ak47
         puts
         raise "No command supplied"
       end
-      Runner.new(:watch_dirs => watch_dirs, :maximum => maximum, :interval => interval, :error_time => error_time, :command => command) { exec(command) }.start
+      Runner.new(:watch_dirs => watch_dirs, :maximum => maximum, :interval => interval, :error_time => error_time, :command => command, :interrupt => interrupt) {
+        exec(command)
+      }.start
     rescue
       puts $!.message.red
       exit 1

@@ -8,13 +8,21 @@ module Ak47
       @interval   = opts && opts[:interval] || 0.01
       @error_time = opts && opts[:error_time] || 5
       @command    = opts && opts[:command]
+      @interrupt  = opts && opts.key?(:interrupt) ? opts[:interrupt] : true
       @blk        = blk
     end
 
     def start
       listeners = watch_dirs.map {|wd| Guard::Listener.select_and_init(:watchdir => wd, :watch_all_modifications => true) }
+      change_detected = false
       listeners.each do |l|
-        l.on_change { |f| Thread.main.raise Reload, "File system changed" }
+        l.on_change { |f|
+          if @interrupt
+            Thread.main.raise Reload, "File system changed"
+          else
+            change_detected = true
+          end
+        }
         Thread.new { l.start }
       end
 
@@ -32,8 +40,13 @@ module Ak47
           _, status = Process.waitpid2(@pid)
           @thread.kill if @thread
           if status.success?
-            puts "[Terminated, waiting for file system change]".green
-            maximum ? sleep(interval) : sleep
+            if change_detected
+              puts "[Change detected while previously running]".green
+              change_detected = false
+            else
+              puts "[Terminated, waiting for file system change]".green
+              maximum ? sleep(interval) : sleep
+            end
           else
             puts "[Terminated abnormally (#{status.inspect}), retrying in 5s]".red
             sleep error_time
