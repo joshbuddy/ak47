@@ -1,4 +1,4 @@
 #!/usr/bin/env ruby
 
 require 'ak47'
-Ak47.run(*$*)
+Ak47::CLI.run(*$*)

@@ -1,6 +1,6 @@
 module Ak47
   class Runner
-    attr_reader :watch_dirs, :maximum, :interval, :error_time, :command
+    attr_reader :watch_dirs, :maximum, :interval, :error_time, :command, :interrupt
 
     def initialize(opts = nil, &blk)
       @watch_dirs = Array(opts && opts[:watch_dirs] || Dir.pwd)
@@ -15,12 +15,14 @@ module Ak47
     def start
       listeners = watch_dirs.map {|wd| Guard::Listener.select_and_init(:watchdir => wd, :watch_all_modifications => true) }
       change_detected = false
+      running = false
       listeners.each do |l|
         l.on_change { |f|
           if @interrupt
             Thread.main.raise Reload, "File system changed"
           else
             change_detected = true
+            Thread.main.raise Reload, "File system changed" unless running
           end
         }
         Thread.new { l.start }
@@ -36,8 +38,14 @@ module Ak47
           if maximum 
             @thread = Thread.new { sleep maximum; Thread.main.raise Reload, "Cancelled due to maximum time" }
           end
-          @pid = fork(&@blk)
-          _, status = Process.waitpid2(@pid)
+          running = true
+          change_detected = false
+          begin
+            @pid = fork(&@blk)
+            _, status = Process.waitpid2(@pid)
+          ensure
+            running = false
+          end
           @thread.kill if @thread
           if status.success?
             if change_detected
