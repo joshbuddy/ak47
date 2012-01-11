@@ -28,7 +28,7 @@ module Ak47
         Thread.new { l.start }
       end
 
-      at_exit { Process.kill("INT", @pid) rescue nil if @pid }
+      at_exit { kill_pid }
 
       puts "[Starting ak47 #{VERSION} in #{watch_dirs.join(', ')}]".green
       loop do
@@ -42,6 +42,7 @@ module Ak47
           change_detected = false
           begin
             @pid = fork(&@blk)
+            Process.detach(@pid)
             _, status = Process.waitpid2(@pid)
           ensure
             running = false
@@ -60,6 +61,7 @@ module Ak47
             sleep error_time
           end
         rescue Reload => e
+          kill_pid
           sleep interval
           puts "[Reloading (#{e.message}) #{Time.new.to_s}]".yellow
         rescue Interrupt
@@ -67,6 +69,34 @@ module Ak47
           exit
         end
       end
+    end
+
+    def kill_pid
+      if @pid
+        begin
+          unless wait_pid('INT')
+            unless wait_pid('KILL')
+              raise "[Unable to kill #{@pid}]"
+            end
+          end
+        rescue Errno::ESRCH
+        end
+      end
+    end
+
+    def wait_pid(sig)
+      count = 0
+      while count < 5
+        begin
+          Process.kill(sig, @pid)
+          count += 1
+          sleep 1
+        rescue Errno::ESRCH
+          @pid = nil
+          return true
+        end
+      end
+      false
     end
   end
 end
