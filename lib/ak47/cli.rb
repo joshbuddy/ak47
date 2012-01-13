@@ -47,6 +47,7 @@ module Ak47
         exec(command)
       }.start
     rescue
+      puts $!.backtrace.join("\n  ") if ENV['DEBUG']
       puts $!.message.red
       exit 1
     end

@@ -44,11 +44,13 @@ module Ak47
             @pid = fork(&@blk)
             Process.detach(@pid)
             _, status = Process.waitpid2(@pid)
+          rescue Errno::ECHILD
+            @pid = nil
           ensure
             running = false
           end
           @thread.kill if @thread
-          if status.success?
+          if @pid.nil? || status.success?
             if change_detected
               puts "[Change detected while previously running]".green
               change_detected = false
